@@ -1,0 +1,78 @@
+services:
+
+  web-app:
+    build: .
+    image: hailo-gstreamer-opencv-web-app
+    # Host networking lets docker compose run bind directly to the Pi's port 5000
+    # without needing --service-ports or a ports: mapping (which run ignores anyway).
+    network_mode: host
+
+    # ── Device access ────────────────────────────────────────────────────────
+    # libcamera walks the media-controller graph at runtime and opens whatever
+    # device nodes it discovers (video0-35, v4l-subdev0-2, media0-3, dma_heap/*).
+    # We bind-mount the whole /dev and restrict actual open() calls with cgroup
+    # rules keyed on device major numbers:
+    #   81  — V4L2 character devices  (/dev/video*, /dev/v4l-subdev*)
+    #   510 — Media controller nodes  (/dev/media*)
+    #   253 — DMA heap allocator      (/dev/dma_heap/*)
+    #   509 — Hailo-8L NPU            (/dev/hailo0)
+    volumes:
+      - /dev:/dev
+      - /run/udev:/run/udev:ro          # libcamera uses udev to enumerate cameras
+      - /usr/lib/python3/dist-packages/hailo_platform:/opt/hailo/hailo_platform:ro
+      - /usr/lib/libhailort.so:/usr/lib/libhailort.so:ro
+      - /usr/lib/libhailort.so.4.20.0:/usr/lib/libhailort.so.4.20.0:ro
+      - ./models:/models:ro
+
+    device_cgroup_rules:
+      - "c 81:* rmw"    # V4L2 — video*, v4l-subdev*
+      - "c 510:* rmw"   # media controllers
+      - "c 253:* rmw"   # DMA heap
+      - "c 509:* rmw"   # Hailo-8L NPU
+
+    # GID 44 = video on both host (Raspberry Pi OS) and the Debian base image
+    group_add:
+      - video
+
+    environment:
+      - HOST
+      - PORT
+      - WIDTH
+      - HEIGHT
+      - FPS
+
+  jupyter:
+    build:
+      context: .
+      target: runtime
+    image: hailo-gstreamer-opencv-jupyter
+    ports:
+      - "8888:8888"
+
+    volumes:
+      - /dev:/dev
+      - /run/udev:/run/udev:ro
+      - /usr/lib/python3/dist-packages/hailo_platform:/opt/hailo/hailo_platform:ro
+      - /usr/lib/libhailort.so:/usr/lib/libhailort.so:ro
+      - /usr/lib/libhailort.so.4.20.0:/usr/lib/libhailort.so.4.20.0:ro
+      - ./models:/models:ro
+      - ./notebooks:/app/notebooks
+
+    device_cgroup_rules:
+      - "c 81:* rmw"
+      - "c 510:* rmw"
+      - "c 253:* rmw"
+      - "c 509:* rmw"
+
+    group_add:
+      - video
+
+    entrypoint: []
+    command: >
+      python3 -m notebook
+        --ip=0.0.0.0
+        --port=8888
+        --no-browser
+        --notebook-dir=/app/notebooks
+        --IdentityProvider.token=''
+        --allow-root

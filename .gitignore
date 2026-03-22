@@ -1,0 +1,37 @@
+# Python environments
+.venv/
+test_opencv/
+
+# Model files — large binaries, manage separately
+models/
+*.onnx
+*.hef
+*.pt
+*.bin
+
+# Hailo local wheels
+wheels/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Distribution / build
+dist/
+build/
+*.egg-info/
+
+# Environment files with secrets
+.env
+
+# OS
+.DS_Store
+Thumbs.db
