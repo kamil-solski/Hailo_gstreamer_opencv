@@ -103,6 +103,7 @@ RUN mkdir -p /opt/hailo/hailo_platform
 WORKDIR /app
 COPY entrypoint.sh /entrypoint.sh
 COPY Gstreamer/ ./Gstreamer/
+COPY helpers.py ./helpers.py
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 5000

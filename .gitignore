@@ -29,8 +29,6 @@ dist/
 build/
 *.egg-info/
 
-# Environment files with secrets
-.env
 
 # OS
 .DS_Store

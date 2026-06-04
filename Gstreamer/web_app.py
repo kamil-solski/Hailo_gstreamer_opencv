@@ -21,10 +21,18 @@ Usage:
 
 import argparse
 import logging
+import pathlib
 import signal
 import sys
 import threading
 from time import sleep, time
+
+# Allow importing helpers.py from the project root regardless of CWD
+_ROOT = pathlib.Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from helpers import load_config
 
 # hailo_platform is installed system-wide, not inside the venv
 _HAILO_PATH = "/usr/lib/python3/dist-packages"
@@ -501,14 +509,31 @@ def create_app(capture: GStreamerCapture):
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
+    # Two-pass parse: extract --config first so YAML values become argparse defaults.
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--config", default=str(_ROOT / "config.yaml"))
+    pre_args, _ = pre.parse_known_args()
+
+    cfg = load_config(pre_args.config)
+    if cfg:
+        logging.info(f"Loaded config: {pre_args.config}")
+
     parser = argparse.ArgumentParser(description="CSI camera web GUI (GStreamer)")
-    parser.add_argument("--host", default="0.0.0.0", help="Bind host")
-    parser.add_argument("--port", type=int, default=5000, help="HTTP port")
-    parser.add_argument("--width", type=int, default=640, help="Frame width")
-    parser.add_argument("--height", type=int, default=480, help="Frame height")
-    parser.add_argument("--fps", type=int, default=30, help="Framerate")
-    parser.add_argument("--onnx", default=None, help="Path to ONNX face model (e.g. ../yolov8n-face.onnx)")
-    parser.add_argument("--hef", default=None, help="Path to Hailo HEF face model (e.g. ../yolov8n_face.hef)")
+    parser.add_argument("--config", default=str(_ROOT / "config.yaml"), help="Path to config.yaml")
+    parser.add_argument("--host", help="Bind host")
+    parser.add_argument("--port", type=int, help="HTTP port")
+    parser.add_argument("--width", type=int, help="Frame width")
+    parser.add_argument("--height", type=int, help="Frame height")
+    parser.add_argument("--fps", type=int, help="Framerate")
+    parser.add_argument("--onnx", default=None, help="Path to ONNX face model")
+    parser.add_argument("--hef", default=None, help="Path to Hailo HEF face model")
+    parser.set_defaults(
+        host=cfg.get("host", "0.0.0.0"),
+        port=cfg.get("port", 5000),
+        width=cfg.get("width", 640),
+        height=cfg.get("height", 480),
+        fps=cfg.get("fps", 30),
+    )
     args = parser.parse_args()
 
     if args.onnx and args.hef:

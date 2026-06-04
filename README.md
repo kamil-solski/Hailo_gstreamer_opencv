@@ -24,15 +24,16 @@ rpicam-hello -t 0 --post-process-file /usr/share/rpi-camera-assets/hailo_yolov8_
 Test_opencv/
 ├── Dockerfile              # multi-stage: build OpenCV+GStreamer → runtime
 ├── docker-compose.yml      # web-app + jupyter services
-├── entrypoint.sh           # web-app entry point (reads .env, accepts model path)
-├── .env                    # default values for HOST, PORT, WIDTH, HEIGHT, FPS
+├── entrypoint.sh           # web-app entry point (detects model type, passes to Python)
+├── config.yaml             # HOST, PORT, WIDTH, HEIGHT, FPS — edit to change defaults
+├── helpers.py              # shared utilities (load_config) importable from all scripts
 ├── .dockerignore
 ├── pyproject.toml          # Python dependencies (uv)
-├── uv.lock                 # locked dependency graph (commit this)
-├── models/                 # model files — bind-mounted read-only, never in the image
+├── uv.lock                 # locked dependency graph
+├── models/                 # models (.hef is hailo format)
 │   ├── yolov8n-face.onnx
 │   └── yolov8n_face.hef
-├── notebooks/              # Jupyter notebooks — live bind-mounted
+├── notebooks/              # Jupyter notebooks prototypes
 │   └── Test.ipynb
 ├── Gstreamer/
 │   ├── web_app.py          # Flask MJPEG stream + ONNX/Hailo inference
@@ -116,13 +117,23 @@ No extra packages are required on the host — `libcamera` and the GStreamer
 ---
 
 ## 2. Configuration
-Create .env
-```bash
-cp. .env.example .env
+
+Edit `config.yaml` to change resolution, port, etc.:
+
+```yaml
+host: "0.0.0.0"
+port: 5000
+width: 640
+height: 480
+fps: 30
 ```
 
-Edit `.env` to change resolution, port, etc. These values are read by
-`docker-compose.yml` and forwarded into the container as environment variables.
+The file is volume-mounted into the container at `/app/config.yaml` and read
+by Python at startup. CLI flags (`--host`, `--port`, `--width`, `--height`,
+`--fps`) override any value in the file.
+
+`helpers.load_config()` is available to all scripts under `Gstreamer/` and
+`V4l2/` — import it the same way `web_app.py` does.
 
 Download models and put inside models/:
 https://drive.google.com/file/d/1s54p0ZZVR6T-q7GkeRR40PfRfNJfnGyO/view?usp=sharing
@@ -130,14 +141,17 @@ https://drive.google.com/file/d/1ufLhsNPmaOUmqfFiqLpK0thHaum8dNY1/view?usp=shari
 
 Models might not have best accuracy, but it is only to prove app is working
 
----
+If you want your models, check repo explaining how to convert models to hef: https://github.com/kamil-solski/Face_recog_hef
 
-## 3. Quick start
-
+## 3. Build project
 ```bash
 # Build images — first time compiles OpenCV from source (~30–60 min on Pi 5)
 docker compose build
 ```
+
+---
+
+## 3. Usage
 
 ### Web stream
 

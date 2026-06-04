@@ -23,6 +23,7 @@ services:
       - /usr/lib/libhailort.so:/usr/lib/libhailort.so:ro
       - /usr/lib/libhailort.so.4.20.0:/usr/lib/libhailort.so.4.20.0:ro
       - ./models:/models:ro
+      - ./config.yaml:/app/config.yaml:ro
 
     device_cgroup_rules:
       - "c 81:* rmw"    # V4L2 — video*, v4l-subdev*
@@ -33,13 +34,6 @@ services:
     # GID 44 = video on both host (Raspberry Pi OS) and the Debian base image
     group_add:
       - video
-
-    environment:
-      - HOST
-      - PORT
-      - WIDTH
-      - HEIGHT
-      - FPS
 
   jupyter:
     build:
