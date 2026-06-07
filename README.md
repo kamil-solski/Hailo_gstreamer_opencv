@@ -21,7 +21,7 @@ rpicam-hello -t 0 --post-process-file /usr/share/rpi-camera-assets/hailo_yolov8_
 ## Project structure
 
 ```
-Test_opencv/
+.
 ├── Dockerfile              # multi-stage: build OpenCV+GStreamer → runtime
 ├── docker-compose.yml      # web-app + jupyter services
 ├── entrypoint.sh           # web-app entry point (detects model type, passes to Python)
@@ -30,13 +30,23 @@ Test_opencv/
 ├── .dockerignore
 ├── pyproject.toml          # Python dependencies (uv)
 ├── uv.lock                 # locked dependency graph
-├── models/                 # models (.hef is hailo format)
+├── models/                 # place model files here (.hef = Hailo, .onnx = ONNX)
 │   ├── yolov8n-face.onnx
-│   └── yolov8n_face.hef
-├── notebooks/              # Jupyter notebooks prototypes
+│   ├── yolov8n_face.hef
+│   └── yolov11n-face.hef
+├── notebooks/              # Jupyter notebook prototypes
 │   └── Test.ipynb
-├── Gstreamer/
-│   ├── web_app.py          # Flask MJPEG stream + ONNX/Hailo inference
+├── backend/                # web application
+│   ├── app.py              # Flask routes + entry point
+│   ├── capture.py          # GStreamer capture thread
+│   ├── inference/
+│   │   ├── __init__.py     # re-exports run_onnx_inference, run_hailo_inference
+│   │   ├── onnx.py         # ONNX YOLOv8 decoder
+│   │   └── hailo.py        # Hailo decoders: NMS / DFL / multi-head (YOLOv8/v11)
+├── frontend/
+│   └── templates/
+│       └── index.html      # MJPEG viewer page
+├── Gstreamer/              # standalone scripts (independent of backend/)
 │   ├── Test_opencv_csi_onnx.py
 │   └── hailo_yolo_inference.py
 └── V4l2/
@@ -177,7 +187,7 @@ Open in browser: **http://\<pi-ip\>:5000**
 docker compose up jupyter
 ```
 
-Open in browser: **http://\<pi-ip\>:8888** (token: `raspberry`)
+Open in browser: **http://\<pi-ip\>:8888**. You can set token in docker-compose.yml. Right now it is empty (no token)
 
 Models are available inside the notebook at `/models/`:
 

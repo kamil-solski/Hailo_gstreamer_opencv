@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ARGS=("Gstreamer/web_app.py")
+ARGS=("backend/app.py")
 
 # Optional model path passed as first positional argument:
 #   docker compose run web-app /models/yolov8n_face.hef

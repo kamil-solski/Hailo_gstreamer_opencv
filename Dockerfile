@@ -103,6 +103,8 @@ RUN mkdir -p /opt/hailo/hailo_platform
 WORKDIR /app
 COPY entrypoint.sh /entrypoint.sh
 COPY Gstreamer/ ./Gstreamer/
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
 COPY helpers.py ./helpers.py
 RUN chmod +x /entrypoint.sh
 
